@@ -9,13 +9,6 @@ use Symfony\Component\Process\Process;
 
 abstract class PermissionsSetter implements PermissionsSetterInterface
 {
-    private $process;
-
-    public function __construct(Process $process = null)
-    {
-        $this->process = $process;
-    }
-
     /**
      * @return string
      */
@@ -27,11 +20,11 @@ abstract class PermissionsSetter implements PermissionsSetterInterface
     }
 
     /**
-     * @param $command
-     * @param $path
+     * @param string $command
+     * @param string $path
      * @return void
      */
-    protected function runCommand($command, $path)
+    protected function runCommand(string $command, string $path)
     {
         $this->runProcess(str_replace(
             ['%httpduser%', '%path%'],
@@ -41,21 +34,18 @@ abstract class PermissionsSetter implements PermissionsSetterInterface
     }
 
     /**
-     * @param $commandline
+     * @param string $commandline
      * @return string
      */
-    protected function runProcess($commandline): string
+    protected function runProcess(string $commandline): string
     {
-        if (null === $this->process) {
-            $this->process = new Process(null);
+        $process = Process::fromShellCommandline($commandline);
+        $process->run();
+        
+        if (!$process->isSuccessful()) {
+            throw new ProcessFailedException($process);
         }
 
-        $this->process->setCommandLine($commandline);
-        $this->process->run();
-        if (!$this->process->isSuccessful()) {
-            throw new ProcessFailedException($this->process);
-        }
-
-        return trim($this->process->getOutput());
+        return trim($process->getOutput());
     }
 }
